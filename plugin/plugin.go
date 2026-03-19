@@ -1304,6 +1304,13 @@ func (b *ORMBuilder) renderGormTag(field *Field) string {
 	if len(tag.GetSerializer()) > 0 {
 		gormRes += fmt.Sprintf("serializer:%s;", tag.GetSerializer())
 	}
+	if tag.GetAutoCreateTime() {
+		gormRes += "autoCreateTime;"
+
+	}
+	if tag.GetAutoUpdateTime() {
+		gormRes += "autoUpdateTime;"
+	}
 
 	var foreignKey, associationForeignKey, joinTable, joinTableForeignKey, associationJoinTableForeignKey string
 	var replace, append, clear bool
@@ -2973,7 +2980,9 @@ func (b *ORMBuilder) parseServices(file *protogen.File) {
 		}
 
 		if !genSvc.autogen {
+			continue
 			b.suppressWarn = true
+
 		}
 
 		for _, method := range service.Methods {

@@ -952,6 +952,8 @@ func (b *ORMBuilder) parseBasicFields(msg *protogen.Message, g *protogen.Generat
 					// This is a soft delete field - map to gorm.DeletedAt at ORM level
 					typePackage = gormImport
 					fieldType = "*" + generateImport("DeletedAt", gormImport, g)
+					// Override the gorm tag type to datetime for database compatibility
+					gormOptions.Tag = tagWithType(gormOptions.Tag, "datetime")
 				} else {
 					// Regular timestamp field
 					typePackage = stdTimeImport

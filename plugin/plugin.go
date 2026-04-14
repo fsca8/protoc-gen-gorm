@@ -213,6 +213,7 @@ type Field struct {
 	Package              string
 	ParentOrigName       string
 	FieldAssociationInfo fieldAssociationInfo
+	IsSoftDelete         bool // 标记是否为软删除字段
 }
 
 type autogenMethod struct {
@@ -892,10 +893,11 @@ func (b *ORMBuilder) parseBasicFields(msg *protogen.Message, g *protogen.Generat
 			continue
 		}
 
-		tag := gormOptions.Tag
-		fieldName := camelCase(string(fd.Name()))
-		fieldType := fd.Kind().String()
-		var typePackage string
+	tag := gormOptions.Tag
+	fieldName := camelCase(string(fd.Name()))
+	fieldType := fd.Kind().String()
+	var typePackage string
+	var isSoftDelete bool // 标记是否为软删除字段
 
 		if b.dbEngine == ENGINE_POSTGRES && b.IsAbleToMakePQArray(fieldType) && field.Desc.IsList() {
 			switch fieldType {
@@ -954,6 +956,8 @@ func (b *ORMBuilder) parseBasicFields(msg *protogen.Message, g *protogen.Generat
 					fieldType = "*" + generateImport("DeletedAt", gormImport, g)
 					// Override the gorm tag type to datetime for database compatibility
 					gormOptions.Tag = tagWithType(gormOptions.Tag, "datetime")
+					// Mark as soft delete field
+					isSoftDelete = true
 				} else {
 					// Regular timestamp field
 					typePackage = stdTimeImport
@@ -1033,6 +1037,7 @@ func (b *ORMBuilder) parseBasicFields(msg *protogen.Message, g *protogen.Generat
 			ParentGoType:     "",
 			TypeName:         fieldType,
 			Package:          typePackage,
+			IsSoftDelete:     isSoftDelete,
 		}
 
 		if tName := gormOptions.GetReferenceOf(); tName != "" {
@@ -1548,10 +1553,8 @@ func (b *ORMBuilder) generateFieldConversion(message *protogen.Message, field *p
 				g.P(`to.`, fieldName, ` = &`, generateImport("UUID", gtypesImport, g), `{Value: m.`, fieldName, `.String()}`)
 			}
 		} else if fieldType == protoTypeTimestamp { // Singular WKT Timestamp ---
-			// Check if this is a soft delete field
-			options := field.Desc.Options().(*descriptorpb.FieldOptions)
-			fieldOptions := getFieldOptions(options)
-			if fieldOptions != nil && fieldOptions.GetTag() != nil && fieldOptions.GetTag().GetType() == "deleted_at" {
+			// Check if this is a soft delete field using the IsSoftDelete flag
+			if ofield != nil && ofield.IsSoftDelete {
 				// Handle soft delete conversion
 				if toORM {
 					g.P(`if m.`, fieldName, ` != nil {`)

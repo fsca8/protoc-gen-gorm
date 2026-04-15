@@ -893,11 +893,11 @@ func (b *ORMBuilder) parseBasicFields(msg *protogen.Message, g *protogen.Generat
 			continue
 		}
 
-	tag := gormOptions.Tag
-	fieldName := camelCase(string(fd.Name()))
-	fieldType := fd.Kind().String()
-	var typePackage string
-	var isSoftDelete bool // 标记是否为软删除字段
+		tag := gormOptions.Tag
+		fieldName := camelCase(string(fd.Name()))
+		fieldType := fd.Kind().String()
+		var typePackage string
+		var isSoftDelete bool // 标记是否为软删除字段
 
 		if b.dbEngine == ENGINE_POSTGRES && b.IsAbleToMakePQArray(fieldType) && field.Desc.IsList() {
 			switch fieldType {
@@ -954,8 +954,8 @@ func (b *ORMBuilder) parseBasicFields(msg *protogen.Message, g *protogen.Generat
 					// This is a soft delete field - map to gorm.DeletedAt at ORM level
 					typePackage = gormImport
 					fieldType = "*" + generateImport("DeletedAt", gormImport, g)
-					// Override the gorm tag type to datetime for database compatibility
-					gormOptions.Tag = tagWithType(gormOptions.Tag, "datetime")
+					// Override the gorm tag type to timestamp for database compatibility
+					gormOptions.Tag = tagWithType(gormOptions.Tag, "timestamp")
 					// Mark as soft delete field
 					isSoftDelete = true
 				} else {
